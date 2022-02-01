@@ -2,10 +2,10 @@ require('dotenv').config();
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { S3Client, PutObjectCommand, HeadObjectCommand } = require("@aws-sdk/client-s3");
+const AWS = require("aws-sdk");
 const glob = require('glob');
 
-const client = new S3Client({region: 'eu-west-2'});
+const client = new AWS.S3({ apiVersion: '2006-03-01', region: process.env.AWS_REGION});
 const folder = process.env.BBB_PUBLISH_FOLDER;
 const remove = process.env.BBB_PUBLISH_DELETE || false;
 const useLock = process.env.BBB_USE_LOCK || false;
@@ -14,6 +14,10 @@ const lockPath = path.join(os.tmpdir(), 'bbb-s3.lock');
 if (!folder) {
     console.error('No BBB folder');
     process.exit(1);
+}
+
+if (process.argv.indexOf('-f') != -1) {
+    fs.unlinkSync(lockPath);
 }
 
 const allFiles = glob.sync('**/*', {
@@ -32,26 +36,22 @@ const batch = function() {
 
         // skip folders
         if (file[file.length - 1] == '/') return;
-        const head = new HeadObjectCommand({
+
+        const cmd = client.headObject({
             Bucket: process.env.BBB_PUBLISH_BUCKET,
             Key: file,
-        });
-
-        const put = new PutObjectCommand({
-            Bucket: process.env.BBB_PUBLISH_BUCKET,
-            Key: file,
-            Body: fs.createReadStream(folder + file),
-        });
-
-        const cmd = client
-            .send(head)
+        }).promise()
             .then(function(data) {
                 console.log('skipping: ' + file);
                 return false;
             })
             .catch(function(e) {
                 console.log('saving: ' + file);
-                return client.send(put);
+                return client.putObject({
+                    Bucket: process.env.BBB_PUBLISH_BUCKET,
+                    Key: file,
+                    Body: fs.createReadStream(folder + file),
+                }).promise();
             })
             .then(function(d) {
                 if (remove) {
@@ -94,12 +94,13 @@ if (useLock) {
 Promise.all([batch()])
     .then(function (results) {
         console.log('no errors');
+        if (useLock && fs.existsSync(lockPath)) {
+            fs.unlinkSync(lockPath);
+        }
     })
     .catch(function (e) {
         console.log(e);
-    })
-    .finally(function() {
-        if(useLock && fs.existsSync(lockPath)) {
+        if (useLock && fs.existsSync(lockPath)) {
             fs.unlinkSync(lockPath);
         }
     });
