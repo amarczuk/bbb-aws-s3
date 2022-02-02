@@ -51,6 +51,7 @@ const batch = function() {
                     Bucket: process.env.BBB_PUBLISH_BUCKET,
                     Key: file,
                     Body: fs.createReadStream(folder + file),
+                    ACL: 'public-read',
                 }).promise();
             })
             .then(function(d) {
