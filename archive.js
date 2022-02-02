@@ -20,6 +20,15 @@ if (process.argv.indexOf('-f') != -1) {
     fs.unlinkSync(lockPath);
 }
 
+if (useLock) {
+    if (fs.existsSync(lockPath)) {
+        console.error('Lock file (/tmp/bbb-s3.lock) created by another process');
+        process.exit(1);
+    }
+
+    fs.writeFileSync(lockPath, 'locked');
+}
+
 const allFiles = glob.sync('**/*', {
     mark: true,
     cwd: folder
@@ -82,15 +91,6 @@ const batch = function() {
             console.log(e);
         });
 };
-
-if (useLock) {
-    if (fs.existsSync(lockPath)) {
-        console.error('Lock file (/tmp/bbb-s3.lock) created by another process');
-        process.exit(1);
-    }
-
-    fs.writeFileSync(lockPath, 'locked');
-}
 
 Promise.all([batch()])
     .then(function (results) {
