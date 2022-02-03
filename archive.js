@@ -57,7 +57,8 @@ const batch = function() {
             })
             .catch(function(e) {
                 console.log('saving: ' + file);
-                const type = mime.contentType(file);
+                const name = path.basename(file);
+                const type = mime.contentType(name);
                 const options = {
                     Bucket: process.env.BBB_PUBLISH_BUCKET,
                     Key: file,
@@ -65,7 +66,6 @@ const batch = function() {
                     ACL: 'public-read',
                 };
                 if (type) options.ContentType = type;
-                console.log(type);
                 return client.putObject(options).promise();
             })
             .then(function(d) {
