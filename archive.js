@@ -4,6 +4,7 @@ const os = require('os');
 const path = require('path');
 const AWS = require("aws-sdk");
 const glob = require('glob');
+const mime = require('mime-types');
 
 const client = new AWS.S3({ apiVersion: '2006-03-01', region: process.env.AWS_REGION});
 const folder = process.env.BBB_PUBLISH_FOLDER;
@@ -56,12 +57,16 @@ const batch = function() {
             })
             .catch(function(e) {
                 console.log('saving: ' + file);
-                return client.putObject({
+                const type = mime.contentType(file);
+                const options = {
                     Bucket: process.env.BBB_PUBLISH_BUCKET,
                     Key: file,
                     Body: fs.createReadStream(folder + file),
                     ACL: 'public-read',
-                }).promise();
+                };
+                if (type) options.ContentType = type;
+                console.log(type);
+                return client.putObject(options).promise();
             })
             .then(function(d) {
                 if (remove) {
