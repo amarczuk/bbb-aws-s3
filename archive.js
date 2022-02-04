@@ -30,7 +30,7 @@ if (useLock) {
     fs.writeFileSync(lockPath, 'locked');
 }
 
-console.lock('Reading file list...');
+console.log('Reading file list...');
 
 const allFiles = glob.sync('**/*', {
     mark: true,
