@@ -30,6 +30,8 @@ if (useLock) {
     fs.writeFileSync(lockPath, 'locked');
 }
 
+console.lock('Reading file list...');
+
 const allFiles = glob.sync('**/*', {
     mark: true,
     cwd: folder
@@ -72,7 +74,7 @@ const batch = function() {
                 if (remove) {
                     console.log('deleting: ' + file);
                     try {
-                        fs.unlinkSync(file);
+                        fs.unlinkSync(folder + file);
                     } catch(e) {
                         console.error(e);
                     }
