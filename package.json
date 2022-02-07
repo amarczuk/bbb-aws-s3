@@ -1,6 +1,6 @@
 {
   "name": "bbb-aws-s3",
-  "version": "1.0.7",
+  "version": "1.1.0",
   "description": "Stores and retrieves BBB recordings from AWS S3 bucket",
   "main": "archive.js",
   "scripts": {
