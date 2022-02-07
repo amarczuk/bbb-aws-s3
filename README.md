@@ -4,8 +4,8 @@ Copies published media from Big Blue Button server to AWS S3 bucket
 
 ```bash
 npm i bbb-aws-s3
-node archive.js
-node archive.js -f //delete existing lockfile
+bbb-archive
+bbb-archive -f //ignore existing lockfile
 ```
 
 ## S3 configuration
