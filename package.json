@@ -1,7 +1,16 @@
 {
   "name": "bbb-aws-s3",
   "version": "1.1.0",
-  "description": "Stores and retrieves BBB recordings from AWS S3 bucket",
+  "description": "Moves published recordings from Big Blue Button (BBB) server to AWS S3 bucket",
+  "keywords": [
+    "BBB",
+    "big blue button",
+    "AWS",
+    "S3",
+    "recordings"
+  ],
+  "homepage": "https://github.com/amarczuk/bbb-aws-s3#readme",
+  "repository": "github:amarczuk/bbb-aws-s3",
   "main": "archive.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

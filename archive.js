@@ -9,30 +9,46 @@ const glob = require('glob');
 const mime = require('mime-types');
 
 const client = new AWS.S3({ apiVersion: '2006-03-01', region: process.env.AWS_REGION});
-const folder = process.env.BBB_PUBLISH_FOLDER;
+const folder = process.env.BBB_PUBLISH_FOLDER || '/var/bigbluebutton/published/presentation/';
+const statusFolder = process.env.BBB_STATUS_FOLDER || '/var/bigbluebutton/recording/status/published/';
 const remove = process.env.BBB_PUBLISH_DELETE || false;
 const useLock = process.env.BBB_USE_LOCK || false;
 const lockPath = path.join(os.tmpdir(), 'bbb-s3.lock');
 
-if (!folder) {
-    console.error('No BBB folder');
-    process.exit(1);
+const addDate = function(msg) {
+    const d = new Date();
+    const datestring = d.getFullYear() + "-" +
+        (d.getMonth() + 1).toString().padStart(2, '0') + "-" +
+        d.getDate().toString().padStart(2, '0') + " " +
+        d.getHours().toString().padStart(2, '0') + ":" +
+        d.getMinutes().toString().padStart(2, '0') + ':' +
+        d.getSeconds().toString().padStart(2, '0') + '.' +
+        d.getMilliseconds().toString().padStart(3, '0');
+    return datestring + '\t\t' + msg;
 }
 
-if (process.argv.indexOf('-f') != -1) {
+const log = function(msg) {
+    console.log(addDate(msg));
+}
+
+const error = function (msg) {
+    console.error(addDate('Error: ' + msg));
+}
+
+if (process.argv.indexOf('-f') != -1 && fs.existsSync(lockPath)) {
     fs.unlinkSync(lockPath);
 }
 
 if (useLock) {
     if (fs.existsSync(lockPath)) {
-        console.error('Lock file (/tmp/bbb-s3.lock) created by another process');
+        error('Lock file (/tmp/bbb-s3.lock) created by another process');
         process.exit(1);
     }
 
     fs.writeFileSync(lockPath, 'locked');
 }
 
-console.log('Reading file list...');
+log('Reading file list...');
 
 const allFiles = glob.sync('**/*', {
     mark: true,
@@ -40,6 +56,18 @@ const allFiles = glob.sync('**/*', {
 });
 
 let cnt = 0;
+
+const doneCache = {};
+const isDone = function(file) {
+    const rest = file.replace(folder, '');
+    const id = rest.split('/')[0] || '';
+
+    if (!id) return false;
+    if (doneCache[id] !== undefined) return doneCache[id];
+
+    doneCache[id] = fs.existsSync(path.join(statusFolder, id + '-presentation.done'));
+    return doneCache[id];
+}
 
 const batch = function() {
     const forUpload = [];
@@ -51,16 +79,23 @@ const batch = function() {
         // skip folders
         if (file[file.length - 1] == '/') return;
 
+        // check if published status is created
+        if (!isDone(file)) {
+            log(file + ' not published');
+            return;
+        }
+
         const cmd = client.headObject({
             Bucket: process.env.BBB_PUBLISH_BUCKET,
             Key: file,
         }).promise()
             .then(function(data) {
-                console.log('skipping: ' + file);
+                log('skipping: ' + file);
                 return false;
+
             })
             .catch(function(e) {
-                console.log('saving: ' + file);
+                log('saving: ' + file);
                 const name = path.basename(file);
                 const type = mime.contentType(name);
                 const options = {
@@ -74,21 +109,21 @@ const batch = function() {
             })
             .then(function(d) {
                 if (remove) {
-                    console.log('deleting: ' + file);
+                    log('deleting: ' + file);
                     try {
                         fs.unlinkSync(folder + file);
                     } catch(e) {
-                        console.error(e);
+                        error(e);
                     }
                 }
             });
 
-        console.log('queuing ' + file);
+        log('queuing ' + file);
         forUpload.push(cmd);
     });
 
     if (cnt >= allFiles.length && !forUpload.length) {
-        console.log('all done');
+        log('all done');
         return true;
     }
 
@@ -103,13 +138,13 @@ const batch = function() {
 
 Promise.all([batch()])
     .then(function (results) {
-        console.log('no errors');
+        log('no errors');
         if (useLock && fs.existsSync(lockPath)) {
             fs.unlinkSync(lockPath);
         }
     })
     .catch(function (e) {
-        console.log(e);
+        log(e);
         if (useLock && fs.existsSync(lockPath)) {
             fs.unlinkSync(lockPath);
         }
