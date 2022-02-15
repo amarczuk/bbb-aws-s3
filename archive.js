@@ -76,8 +76,6 @@ const batch = function() {
 
     files.forEach(function(file) {
         cnt++;
-        log(path.basename(file));
-        log(mime.contentType(path.basename(file)));
 
         // skip folders
         if (file[file.length - 1] == '/') return;
