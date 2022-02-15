@@ -1,6 +1,6 @@
 {
   "name": "bbb-aws-s3",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Moves published recordings from Big Blue Button (BBB) server to AWS S3 bucket",
   "keywords": [
     "BBB",
