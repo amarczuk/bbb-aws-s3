@@ -13,6 +13,7 @@ const folder = process.env.BBB_PUBLISH_FOLDER || '/var/bigbluebutton/published/p
 const statusFolder = process.env.BBB_STATUS_FOLDER || '/var/bigbluebutton/recording/status/published/';
 const remove = process.env.BBB_PUBLISH_DELETE || false;
 const useLock = process.env.BBB_USE_LOCK || false;
+const keepMeta = process.env.BBB_KEEP_META || false;
 const lockPath = path.join(os.tmpdir(), 'bbb-s3.lock');
 
 const addDate = function(msg) {
@@ -75,6 +76,8 @@ const batch = function() {
 
     files.forEach(function(file) {
         cnt++;
+        log(path.basename(file));
+        log(mime.contentType(path.basename(file)));
 
         // skip folders
         if (file[file.length - 1] == '/') return;
@@ -108,7 +111,11 @@ const batch = function() {
                 return client.putObject(options).promise();
             })
             .then(function(d) {
-                if (remove) {
+                const name = path.basename(file);
+                const type = mime.contentType(name);
+                const keep = type === 'application/xml' && keepMeta;
+
+                if (remove && !keep) {
                     log('deleting: ' + file);
                     try {
                         fs.unlinkSync(folder + file);
