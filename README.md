@@ -41,6 +41,7 @@ BBB_PUBLISH_BUCKET=(bucket name)
 BBB_USE_LOCK=(true - allow only one process at a time) (default=false)
 BBB_PUBLISH_DELETE=(true - delete files when in s3 bucket) (default=fase)
 BBB_KEEP_META=(true - keep xml files) (default=fase)
+BBB_DEBUG=(true - print debug logs) (default=fase)
 ```
 
 ## Changes in BBB code

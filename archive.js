@@ -14,6 +14,7 @@ const statusFolder = process.env.BBB_STATUS_FOLDER || '/var/bigbluebutton/record
 const remove = process.env.BBB_PUBLISH_DELETE || false;
 const useLock = process.env.BBB_USE_LOCK || false;
 const keepMeta = process.env.BBB_KEEP_META || false;
+const debugOn = process.env.BBB_DEBUG || false;
 const lockPath = path.join(os.tmpdir(), 'bbb-s3.lock');
 
 const addDate = function(msg) {
@@ -26,6 +27,12 @@ const addDate = function(msg) {
         d.getSeconds().toString().padStart(2, '0') + '.' +
         d.getMilliseconds().toString().padStart(3, '0');
     return datestring + '\t\t' + msg;
+}
+
+const debug = function (msg) {
+    if (debugOn) {
+        console.log(addDate(msg));
+    }
 }
 
 const log = function(msg) {
@@ -91,7 +98,7 @@ const batch = function() {
             Key: file,
         }).promise()
             .then(function(data) {
-                log('skipping: ' + file);
+                debug('skipping: ' + file);
                 return false;
 
             })
@@ -123,7 +130,7 @@ const batch = function() {
                 }
             });
 
-        log('queuing ' + file);
+        debug('queuing ' + file);
         forUpload.push(cmd);
     });
 
